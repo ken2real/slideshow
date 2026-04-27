@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>a completely normal slideshow btw</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --pink-light: #FFF0F5;
+            --pink: #FFD1DC;
+            --pink-mid: #FFB6C1;
+            --pink-dark: #FF6B81;
+            --red-soft: #FF4D6D;
+            --lavender: #E8D5F5;
+            --mint: #C8F0E0;
+            --cream: #FFF8F0;
+            --peach: #FFE5D9;
+            --text-dark: #4A3040;
+            --text-mid: #8A7080;
+            --gothic-bg: #0D0D1A;
+            --gothic-red: #E94560;
+            --gothic-deep: #16213E;
+            --gothic-text: #F0E6EF;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: var(--gothic-bg);
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .pixel-font { font-family: 'Press Start 2P', cursive; }
+
+        /* ====== Slideshow core ====== */
+        #slideshow { position: relative; width: 100%; height: 100%; }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transform: scale(0.95);
+            transition: opacity 0.65s cubic-bezier(.4,0,.2,1), transform 0.65s cubic-bezier(.4,0,.2,1);
+            pointer-events: none;
+            padding: 2rem;
+            overflow: hidden;
+        }
+        .slide.active {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+
+        /* ====== Background textures ====== */
+        .dot-bg {
+            background-image: radial-gradient(circle, rgba(255,107,129,0.07) 1px, transparent 1px);
+            background-size: 22px 22px;
+        }
+
+        /* Subtle noise grain overlay */
+        .grain::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0.028;
+            pointer-events: none;
+            z-index: 1;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+            background-size: 150px 150px;
+        }
+
+        /* ====== Pixel heart (floating) ====== */
+        .pixel-heart {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: transparent;
+            z-index: 0;
+            box-shadow:
+                3px 0 0 var(--pink-dark),
+                0 3px 0 var(--pink-dark),
+                3px 3px 0 var(--pink-dark),
+                6px 3px 0 var(--pink-dark),
+                0 6px 0 var(--pink-dark),
+                3px 6px 0 var(--pink-dark),
+                6px 6px 0 var(--pink-dark),
+                3px 9px 0 var(--pink-dark);
+            animation: heartFloat var(--dur, 7s) var(--del, 0s) linear infinite;
+            opacity: 0;
+        }
+
+        /* Red variant for gothic slide */
+        .pixel-heart.red {
+            box-shadow:
+                3px 0 0 var(--gothic-red),
+                0 3px 0 var(--gothic-red),
+                3px 3px 0 var(--gothic-red),
+                6px 3px 0 var(--gothic-red),
+                0 6px 0 var(--gothic-red),
+                3px 6px 0 var(--gothic-red),
+                6px 6px 0 var(--gothic-red),
+                3px 9px 0 var(--gothic-red);
+        }
+
+        @keyframes heartFloat {
+            0%   { transform: translateY(0) rotate(0deg); opacity: 0; }
+            8%   { opacity: 0.45; }
+            85%  { opacity: 0.2; }
+            100% { transform: translateY(-105vh) rotate(12deg); opacity: 0; }
+        }
+
+        /* ====== Pixel sparkle ====== */
+        .pixel-sparkle {
+            position: absolute;
+            width: 2px; height: 2px;
+            background: var(--pink-dark);
+            z-index: 0;
+            box-shadow:
+                0 0 0 var(--pink-dark),
+                4px 0 0 var(--pink-dark),
+                0 4px 0 var(--pink-dark),
+                4px 4px 0 var(--pink-dark),
+                2px 2px 0 var(--pink-dark);
+            animation: sparkle var(--dur, 3s) var(--del, 0s) ease-in-out infinite;
+            opacity: 0;
+        }
+        @keyframes sparkle {
+            0%, 100% { opacity: 0; transform: scale(0.7); }
+            50%      { opacity: 0.55; transform: scale(1.3); }
+        }
+
+        /* ====== Tiny star decoration ====== */
+        .tiny-star {
+            position: absolute;
+            background: var(--pink-dark);
+            clip-path: polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+            z-index: 0;
+            animation: sparkle var(--dur, 3s) var(--del, 0s) ease-in-out infinite;
+            opacity: 0;
+        }
+
+        /* ====== Transition burst heart ====== */
+        .burst-heart {
+            position: fixed;
+            width: 3px; height: 3px;
+            background: transparent;
+            z-index: 9999;
+            pointer-events: none;
+            box-shadow:
+                3px 0 0 var(--pink-dark),
+                0 3px 0 var(--pink-dark),
+                3px 3px 0 var(--pink-dark),
+                6px 3px 0 var(--pink-dark),
+                0 6px 0 var(--pink-dark),
+                3px 6px 0 var(--pink-dark),
+                6px 6px 0 var(--pink-dark),
+                3px 9px 0 var(--pink-dark);
+            animation: burstAnim 0.75s ease-out forwards;
+        }
+        @keyframes burstAnim {
+            0%   { transform: translate(0,0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(0.4); opacity: 0; }
+        }
+
+        /* ====== Navigation dots ====== */
+        #nav-dots {
+            position: fixed;
+            bottom: 1.25rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 7px;
+            z-index: 200;
+        }
+        .nav-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: var(--pink-mid);
+            opacity: 0.35;
+            transition: opacity 0.3s, transform 0.3s, background 0.3s;
+            cursor: pointer;
+            border: none;
+            padding: 0;
+        }
+        .nav-dot:hover { opacity: 0.6; }
+        .nav-dot.active {
+            opacity: 1;
+            transform: scale(1.35);
+            background: var(--pink-dark);
+        }
+        /* Gothic slide active dot */
+        .nav-dot.gothic-active {
+            background: var(--gothic-red) !important;
+        }
+
+        .nav-hint {
+            position: fixed;
+            bottom: 1.3rem;
+            right: 1.5rem;
+            z-index: 200;
+            opacity: 0.3;
+            font-size: 0.6rem;
+            color: var(--text-mid);
+            font-family: 'Press Start 2P', cursive;
+            transition: opacity 0.5s;
+        }
+
+        /* ====== Shared slide content styles ====== */
+        .slide-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: clamp(0.65rem, 1.4vw, 0.9rem);
+            color: var(--text-dark);
+            margin-bottom: 2rem;
+            letter-spacing: 0.5px;
+            z-index: 2;
+        }
+
+        .content-card {
+            background: rgba(255,255,255,0.72);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 18px;
+            padding: 2rem 2.4rem;
+            border: 2px solid rgba(255,209,220,0.55);
+            box-shadow: 0 6px 30px rgba(255,107,129,0.07);
+            z-index: 2;
+            max-width: 460px;
+            width: 100%;
+        }
+
+        .bullet-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            margin-bottom: 1.15rem;
+            font-size: clamp(0.88rem, 1.3vw, 1.05rem);
+            color: var(--text-dark);
+            font-weight: 500;
+            line-height: 1.55;
+        }
+        .bullet-row:last-child { margin-bottom: 0; }
+        .bullet-dot {
+            flex-shrink: 0;
+            width: 8px; height: 8px;
+            border-radius: 2px;
+            margin-top: 5px;
+        }
+
+        /* ====== Individual slide backgrounds ====== */
+        .bg-intro     { background: linear-gradient(135deg, var(--pink-light) 0%, var(--pink) 50%, var(--lavender) 100%); }
+        .bg-about-you { background: linear-gradient(160deg, var(--cream) 0%, var(--pink-light) 100%); }
+        .bg-gothic    { background: var(--gothic-bg) !important; }
+        .bg-lore      { background: linear-gradient(150deg, var(--pink-light) 0%, var(--cream) 45%, var(--lavender) 100%); }
+        .bg-situation { background: linear-gradient(160deg, var(--pink-light) 0%, var(--pink) 100%); }
+        .bg-issue     { background: linear-gradient(160deg, var(--pink) 0%, var(--pink-light) 100%); }
+        .bg-solution  { background: linear-gradient(140deg, var(--mint) 0%, var(--pink-light) 60%, var(--cream) 100%); }
+        .bg-options   { background: linear-gradient(160deg, var(--cream) 0%, var(--pink-light) 50%, var(--lavender) 100%); }
+        .bg-cat       { background: linear-gradient(155deg, var(--pink) 0%, var(--pink-light) 45%, var(--lavender) 100%); }
+        .bg-question  { background: linear-gradient(150deg, var(--pink-light) 0%, var(--pink) 50%, var(--cream) 100%); }
+        .bg-closing   { background: linear-gradient(160deg, var(--lavender) 0%, var(--pink-light) 50%, var(--pink) 100%); }
+
+        /* ====== Intro slide specifics ====== */
+        .intro-tilt { transform: rotate(-1.8deg); }
+        .intro-sub {
+            font-size: 0.65rem;
+            color: var(--text-mid);
+            margin-bottom: 1.2rem;
+            animation: gentleBob 3s ease-in-out infinite;
+        }
+        @keyframes gentleBob {
+            0%, 100% { transform: translateY(0); }
+            50%      { transform: translateY(-4px); }
+        }
+
+        /* ====== Gothic slide specifics ====== */
+        .bg-gothic .slide-title { color: var(--gothic-red) !important; }
+
+        .gothic-card {
+            max-width: 460px;
+            width: 100%;
+            padding: 2rem 2.4rem;
+            border: 1px solid rgba(233,69,96,0.25);
+            border-radius: 18px;
+            background: rgba(22,33,62,0.55);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 2;
+        }
+        .bg-gothic .bullet-row { color: var(--gothic-text) !important; }
+        .bg-gothic .bullet-dot { background: var(--gothic-red) !important; }
+
+        .red-glow {
+            position: absolute;
+            width: 350px; height: 350px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(233,69,96,0.12) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .speed-line {
+            position: absolute;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(233,69,96,0.25), transparent);
+            pointer-events: none;
+            z-index: 0;
+            animation: speedDash var(--dur, 2s) var(--del, 0s) linear infinite;
+        }
+        @keyframes speedDash {
+            0%   { transform: translateX(-110%); }
+            100% { transform: translateX(110vw); }
+        }
+
+        /* Chaos energy ring on gothic slide */
+        .chaos-ring {
+            position: absolute;
+            width: 280px; height: 280px;
+            border: 1px solid rgba(233,69,96,0.08);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            animation: chaosSpin 20s linear infinite;
+        }
+        @keyframes chaosSpin {
+            0%   { transform: rotate(0deg) scale(1); }
+            50%  { transform: rotate(180deg) scale(1.1); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+
+        /* ====== Lore slide washi tape ====== */
+        .washi {
+            position: absolute;
+            width: 90px; height: 22px;
+            background: rgba(255,183,193,0.45);
+            top: -11px;
+            left: 50%;
+            transform: translateX(-50%) rotate(-1.5deg);
+            border-radius: 1px;
+            z-index: 3;
+        }
+        .washi-alt {
+            background: rgba(232,213,245,0.45);
+            transform: translateX(-50%) rotate(1deg);
+            left: 55%;
+            top: -9px;
+            width: 70px;
+        }
+
+        /* ====== Option buttons ====== */
+        .option-btn {
+            background: rgba(255,255,255,0.78);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 2px solid var(--pink-mid);
+            border-radius: 14px;
+            padding: 0.85rem 2.8rem;
+            font-family: 'Quicksand', sans-serif;
+            font-weight: 700;
+            font-size: clamp(0.9rem, 1.2vw, 1.05rem);
+            color: var(--text-dark);
+            cursor: pointer;
+            transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s, background 0.25s, color 0.25s;
+            z-index: 2;
+            position: relative;
+            outline: none;
+        }
+        .option-btn:hover {
+            transform: scale(1.06);
+            border-color: var(--pink-dark);
+            box-shadow: 0 4px 22px rgba(255,107,129,0.18);
+        }
+        .option-btn:focus-visible {
+            box-shadow: 0 0 0 3px var(--pink-dark);
+        }
+        .option-btn:active { transform: scale(0.97); }
+
+        .option-btn.chosen {
+            background: var(--pink-dark);
+            color: #fff;
+            border-color: var(--pink-dark);
+            pointer-events: none;
+        }
+
+        /* ====== Cute bow (decorative) ====== */
+        .bow-deco {
+            position: absolute;
+            z-index: 1;
+        }
+        .bow-deco::before, .bow-deco::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            width: 14px; height: 18px;
+            border-radius: 50%;
+        }
+        .bow-deco::before { left: 0; transform: rotate(-18deg); }
+        .bow-deco::after  { right: 0; transform: rotate(18deg); }
+        .bow-pink::before, .bow-pink::after { background: var(--pink-dark); }
+        .bow-lav::before, .bow-lav::after  { background: var(--lavender); }
+        .bow-peach::before, .bow-peach::after { background: var(--peach); }
+
+        .bow-center {
+            position: absolute;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .bow-pink .bow-center { background: var(--red-soft); }
+        .bow-lav .bow-center  { background: #c9a0dc; }
+        .bow-peach .bow-center { background: #f0b8a0; }
+
+        /* ====== Highlighted text ====== */
+        .text-accent { color: var(--pink-dark); }
+        .text-go-red { color: var(--gothic-red) !important; }
+        .text-muted  { color: var(--text-mid); }
+
+        /* ====== Pixel cat canvas ====== */
+        #pixel-cat {
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+
+        /* ====== Breathing animation for key text ====== */
+        .breathe {
+            animation: breathe 4s ease-in-out infinite;
+        }
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); }
+            50%      { transform: scale(1.015); }
+        }
+
+        /* ====== Big text slide shared ====== */
+        .big-text {
+            font-size: clamp(1.1rem, 2vw, 1.45rem);
+            font-weight: 700;
+            color: var(--text-dark);
+            text-align: center;
+            line-height: 1.7;
+            max-width: 420px;
+            z-index: 2;
+        }
+
+        /* ====== Reduced motion ====== */
+        @media (prefers-reduced-motion: reduce) {
+            .pixel-heart, .pixel-sparkle, .tiny-star, .speed-line, .burst-heart,
+            .chaos-ring, .intro-sub, .breathe {
+                animation: none !important;
+            }
+            .slide { transition: opacity 0.25s ease !important; transform: none !important; }
+            .slide.active { transform: none !important; }
+        }
+
+        /* ====== Responsive tweaks ====== */
+        @media (max-width: 640px) {
+            .slide { padding: 1.5rem; }
+            .content-card, .gothic-card { padding: 1.5rem 1.6rem; }
+            .option-btn { padding: 0.7rem 1.8rem; }
+            .nav-hint { display: none; }
+            .washi, .washi-alt { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div id="slideshow" role="region" aria-label="Slideshow presentation" aria-roledescription="carousel">
+
+        <!-- ====== SLIDE 0: Intro ====== -->
+        <section class="slide bg-intro dot-bg grain active" data-index="0" aria-label="Intro">
+            <div class="intro-tilt text-center" style="z-index:2;">
+                <p class="pixel-font intro-sub">~ welcome to ~</p>
+                <h1 class="pixel-font breathe" style="font-size:clamp(0.85rem,2vw,1.25rem); color:var(--text-dark); line-height:2;">
+                    a completely normal<br>slideshow btw
+                </h1>
+                <p class="mt-8 text-sm text-muted" style="color:var(--text-mid);">click or press arrow keys</p>
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 1: About You ====== -->
+        <section class="slide bg-about-you dot-bg grain" data-index="1" aria-label="About You">
+            <h2 class="slide-title">About You &#128523;</h2>
+            <div class="content-card" style="position:relative;">
+                <div class="washi"></div>
+                <div class="bullet-row">
+                    <div class="bullet-dot" style="background:var(--pink-dark);"></div>
+                    <span>actually funny (not funnier than me)</span>
+                </div>
+                <div class="bullet-row">
+                    <div class="bullet-dot" style="background:var(--lavender);"></div>
+                    <span>questionable taste in memes, impeccable taste in men (me)</span>
+                </div>
+                <div class="bullet-row">
+                    <div class="bullet-dot" style="background:var(--pink-mid);"></div>
+                    <span>genuinely mad sweet</span>
+                </div>
+                <div class="bullet-row">
+                    <div class="bullet-dot" style="background:var(--red-soft);"></div>
+                    <span>pretty also :3</span>
+                </div>
+            </div>
+            <!-- Bow decoration top-right -->
+            <div class="bow-deco bow-pink" style="top:12%;right:14%;width:28px;height:20px;">
+                <div class="bow-center"></div>
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 2: About Me (GOTHIC) ====== -->
+        <section class="slide bg-gothic grain" data-index="2" aria-label="About Me">
+            <div id="speed-lines-container" style="position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;"></div>
+            <div class="red-glow" style="top:-120px;left:-80px;"></div>
+            <div class="red-glow" style="bottom:-120px;right:-80px;"></div>
+            <div class="chaos-ring" style="top:10%;left:-8%;"></div>
+            <div class="chaos-ring" style="bottom:5%;right:-10%;width:200px;height:200px;animation-direction:reverse;animation-duration:15s;"></div>
+            <h2 class="slide-title">About Me &#128568;</h2>
+            <div class="gothic-card">
+                <div class="bullet-row">
+                    <div class="bullet-dot"></div>
+                    <span>self aware enough to make this slideshow</span>
+                </div>
+                <div class="bullet-row">
+                    <div class="bullet-dot"></div>
+                    <span>will text you at inconvenient times :3</span>
+                </div>
+                <div class="bullet-row">
+                    <div class="bullet-dot"></div>
+                    <span>mad nonchalant</span>
+                </div>
+                <div class="bullet-row">
+                    <div class="bullet-dot"></div>
+                    <span class="text-go-red" style="font-weight:700;">but somehow still locked in when it comes to you</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 3: Our Lore ====== -->
+        <section class="slide bg-lore dot-bg grain" data-index="3" aria-label="Our Lore">
+            <h2 class="slide-title">Our Lore &#128220;</h2>
+            <div class="content-card" style="position:relative;">
+                <div class="washi"></div>
+                <div class="washi washi-alt"></div>
+                <div class="bullet-row">
+                    <div class="bullet-dot" style="background:var(--pink-dark);"></div>
+                    <span>from random convos to inside jokes</span>
+                </div>
+                <div class="bullet-row">
+                    <div class="bullet-dot" style="background:var(--lavender);"></div>
+                    <span>me calling you "stinky" for no reason</span>
+                </div>
+                <div class="bullet-row">
+                    <div class="bullet-dot" style="background:var(--pink-mid);"></div>
+                    <span>(you called me fatty)</span>
+                </div>
+                <div class="bullet-row">
+                    <div class="bullet-dot" style="background:var(--red-soft);"></div>
+                    <span>somehow became a daily thing</span>
+                </div>
+            </div>
+            <!-- Decorative bows -->
+            <div class="bow-deco bow-lav" style="bottom:14%;left:10%;width:24px;height:16px;">
+                <div class="bow-center"></div>
+            </div>
+            <div class="bow-deco bow-peach" style="top:16%;right:12%;width:22px;height:15px;">
+                <div class="bow-center"></div>
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 4: Current Situation ====== -->
+        <section class="slide bg-situation dot-bg grain" data-index="4" aria-label="Current Situation">
+            <h2 class="slide-title">Current Situation &#128528;</h2>
+            <p class="big-text">we basically act like a couple already</p>
+        </section>
+
+        <!-- ====== SLIDE 5: The Issue ====== -->
+        <section class="slide bg-issue dot-bg grain" data-index="5" aria-label="The Issue">
+            <h2 class="slide-title">The Issue &#129300;</h2>
+            <p class="big-text">no official title&hellip;<br><span class="text-muted">kinda sad &#9785;&#65039;</span></p>
+        </section>
+
+        <!-- ====== SLIDE 6: The Solution ====== -->
+        <section class="slide bg-solution dot-bg grain" data-index="6" aria-label="The Solution">
+            <h2 class="slide-title">The Solution &#128161;</h2>
+            <p class="big-text breathe" style="font-weight:800;">we fix that.<br>simple.</p>
+        </section>
+
+        <!-- ====== SLIDE 7: Options ====== -->
+        <section class="slide bg-options dot-bg grain" data-index="7" aria-label="Options">
+            <h2 class="slide-title">Options &#127919;</h2>
+            <div class="flex flex-col gap-4 items-center">
+                <button class="option-btn" data-idx="0" aria-label="Option: yes">yes</button>
+                <button class="option-btn" data-idx="1" aria-label="Option: obviously yes">obviously yes</button>
+                <button class="option-btn" data-idx="2" aria-label="Option: don't overthink it, just yes">don't overthink it, just yes</button>
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 8: Cat Slide ====== -->
+        <section class="slide bg-cat dot-bg grain" data-index="8" aria-label="Cat Slide">
+            <canvas id="pixel-cat" width="104" height="96" style="width:208px;height:192px;"></canvas>
+            <p class="pixel-font mt-6" style="font-size:clamp(0.75rem,1.5vw,1rem);color:var(--text-dark);z-index:2;">meow.</p>
+            <div class="bow-deco bow-pink" style="top:18%;left:15%;width:26px;height:18px;">
+                <div class="bow-center"></div>
+            </div>
+        </section>
+
+        <!-- ====== SLIDE 9: Final Question ====== -->
+        <section class="slide bg-question dot-bg grain" data-index="9" aria-label="Final Question">
+            <h2 class="slide-title">Final Question &#128523;</h2>
+            <p class="breathe" style="font-size:clamp(1.2rem,2.4vw,1.7rem);font-weight:800;color:var(--text-dark);text-align:center;line-height:1.9;max-width:440px;z-index:2;">
+                so&hellip; will you be my girlfriend?
+            </p>
+        </section>
+
+        <!-- ====== SLIDE 10: Closing ====== -->
+        <section class="slide bg-closing dot-bg grain" data-index="10" aria-label="Closing">
+            <p class="pixel-font text-center breathe" style="font-size:clamp(0.6rem,1.2vw,0.85rem);color:var(--text-dark);line-height:2.6;max-width:440px;z-index:2;">
+                take your time&hellip;<br>but like&hellip; not too long &#128557;
+            </p>
+        </section>
+    </div>
+
+    <!-- Navigation dots -->
+    <nav id="nav-dots" aria-label="Slide navigation"></nav>
+    <div class="nav-hint" id="nav-hint" aria-hidden="true">&rarr;</div>
+
+    <script>
+    (function() {
+        /* ====== State ====== */
+        let current = 0;
+        const slides = document.querySelectorAll('.slide');
+        const total  = slides.length;
+        const dotsBox = document.getElementById('nav-dots');
+        const hint    = document.getElementById('nav-hint');
+
+        /* ====== Build nav dots ====== */
+        const dots = [];
+        for (let i = 0; i < total; i++) {
+            const d = document.createElement('button');
+            d.className = 'nav-dot' + (i === 0 ? ' active' : '');
+            d.setAttribute('aria-label', 'Go to slide ' + (i + 1));
+            d.addEventListener('click', () => goTo(i));
+            dotsBox.appendChild(d);
+            dots.push(d);
+        }
+
+        /* ====== Navigation ====== */
+        function goTo(idx) {
+            if (idx === current || idx < 0 || idx >= total) return;
+            spawnBurst(window.innerWidth / 2, window.innerHeight / 2, 8);
+            slides[current].classList.remove('active');
+            slides[idx].classList.add('active');
+            dots[current].classList.remove('active', 'gothic-active');
+            dots[idx].classList.add('active');
+            // Special dot color for gothic slide
+            if (idx === 2) dots[idx].classList.add('gothic-active');
+            current = idx;
+            if (hint) hint.style.opacity = '0';
+        }
+
+        function next() { if (current < total - 1) goTo(current + 1); }
+        function prev() { if (current > 0) goTo(current - 1); }
+
+        /* Keyboard */
+        document.addEventListener('keydown', e => {
+            if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); next(); }
+            else if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
+        });
+
+        /* Click zones (right half = next, left half = prev) */
+        document.getElementById('slideshow').addEventListener('click', e => {
+            if (e.target.closest('.option-btn')) return;
+            if (e.clientX > window.innerWidth / 2) next();
+            else prev();
+        });
+
+        /* Touch swipe */
+        let tx = 0;
+        document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
+        document.addEventListener('touchend', e => {
+            const diff = tx - e.changedTouches[0].clientX;
+            if (Math.abs(diff) > 50) { diff > 0 ? next() : prev(); }
+        });
+
+        /* ====== Pixel heart burst ====== */
+        function spawnBurst(cx, cy, count) {
+            for (let i = 0; i < count; i++) {
+                const h = document.createElement('div');
+                h.className = 'burst-heart';
+                const a = (Math.PI * 2 / count) * i + (Math.random() - 0.5) * 0.4;
+                const dist = 55 + Math.random() * 85;
+                h.style.setProperty('--tx', Math.cos(a) * dist + 'px');
+                h.style.setProperty('--ty', Math.sin(a) * dist + 'px');
+                h.style.left = (cx - 6) + 'px';
+                h.style.top  = (cy - 6) + 'px';
+                document.body.appendChild(h);
+                setTimeout(() => h.remove(), 800);
+            }
+        }
+
+        /* ====== Option buttons ====== */
+        const optionTexts = ['yes', 'obviously yes', "don't overthink it, just yes"];
+        document.querySelectorAll('.option-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.classList.contains('chosen')) return;
+                btn.classList.add('chosen');
+                btn.textContent = 'correct \u2661';
+                // Big burst from button center
+                const r = btn.getBoundingClientRect();
+                spawnBurst(r.left + r.width / 2, r.top + r.height / 2, 18);
+                // Auto-advance
+                setTimeout(() => {
+                    next();
+                    // Reset buttons after transition
+                    setTimeout(() => {
+                        btn.classList.remove('chosen');
+                        btn.textContent = optionTexts[parseInt(btn.dataset.idx)];
+                    }, 700);
+                }, 1100);
+            });
+        });
+
+        /* ====== Floating decorations factory ====== */
+        function addHearts(slide, n, red) {
+            for (let i = 0; i < n; i++) {
+                const h = document.createElement('div');
+                h.className = 'pixel-heart' + (red ? ' red' : '');
+                h.style.left = (5 + Math.random() * 88) + '%';
+                h.style.bottom = '-15px';
+                h.style.setProperty('--dur', (6 + Math.random() * 7) + 's');
+                h.style.setProperty('--del', (Math.random() * 10) + 's');
+                slide.appendChild(h);
+            }
+        }
+
+        function addSparkles(slide, n) {
+            for (let i = 0; i < n; i++) {
+                const s = document.createElement('div');
+                s.className = 'pixel-sparkle';
+                s.style.left = (5 + Math.random() * 88) + '%';
+                s.style.top  = (5 + Math.random() * 88) + '%';
+                s.style.setProperty('--dur', (2.5 + Math.random() * 4) + 's');
+                s.style.setProperty('--del', (Math.random() * 6) + 's');
+                slide.appendChild(s);
+            }
+        }
+
+        function addStars(slide, n) {
+            for (let i = 0; i < n; i++) {
+                const s = document.createElement('div');
+                s.className = 'tiny-star';
+                const sz = 5 + Math.random() * 5;
+                s.style.width = sz + 'px';
+                s.style.height = sz + 'px';
+                s.style.left = (5 + Math.random() * 88) + '%';
+                s.style.top  = (5 + Math.random() * 88) + '%';
+                s.style.setProperty('--dur', (2.5 + Math.random() * 3.5) + 's');
+                s.style.setProperty('--del', (Math.random() * 5) + 's');
+                slide.appendChild(s);
+            }
+        }
+
+        /* ====== Speed lines for gothic slide ====== */
+        (function() {
+            const c = document.getElementById('speed-lines-container');
+            for (let i = 0; i < 14; i++) {
+                const l = document.createElement('div');
+                l.className = 'speed-line';
+                l.style.top = (Math.random() * 100) + '%';
+                l.style.width = (120 + Math.random() * 280) + 'px';
+                l.style.setProperty('--dur', (1.2 + Math.random() * 2) + 's');
+                l.style.setProperty('--del', (Math.random() * 4) + 's');
+                c.appendChild(l);
+            }
+        })();
+
+        /* ====== Draw pixel cat ====== */
+        (function() {
+            const cv = document.getElementById('pixel-cat');
+            if (!cv) return;
+            const ctx = cv.getContext('2d');
+            const px = 8;
+
+            // 13 x 12 pixel cat face
+            // 0=empty 1=body 3=eye 4=nose/mouth 5=inner ear
+            const map = [
+                [0,0,0,1,0,0,0,0,0,1,0,0,0],
+                [0,0,1,5,1,0,0,0,1,5,1,0,0],
+                [0,1,1,1,1,1,1,1,1,1,1,1,0],
+                [1,1,1,1,1,1,1,1,1,1,1,1,1],
+                [1,1,1,1,1,1,1,1,1,1,1,1,1],
+                [1,1,3,3,1,1,1,1,1,3,3,1,1],
+                [1,1,3,3,1,1,4,1,1,3,3,1,1],
+                [1,1,1,1,1,4,4,4,1,1,1,1,1],
+                [1,1,1,1,1,1,4,1,1,1,1,1,1],
+                [0,1,1,1,1,1,1,1,1,1,1,1,0],
+                [0,0,1,1,0,0,0,0,0,1,1,0,0],
+                [0,0,0,1,1,1,1,1,1,1,0,0,0],
+            ];
+
+            const pal = {
+                1: '#FFB6C1',
+                3: '#4A3040',
+                4: '#FF6B81',
+                5: '#FFD1DC',
+            };
+
+            // Whiskers (drawn first, behind face)
+            ctx.fillStyle = '#FF8FA3';
+            for (let w = 0; w < 3; w++) {
+                // Left
+                ctx.fillRect(0, (4 + w) * px, (2 - w * 0.3) * px, Math.max(1, 1));
+                // Right
+                ctx.fillRect((11 + w * 0.3) * px, (4 + w) * px, (2 - w * 0.3) * px, Math.max(1, 1));
+            }
+
+            // Draw cat pixels
+            for (let y = 0; y < map.length; y++) {
+                for (let x = 0; x < map[y].length; x++) {
+                    const v = map[y][x];
+                    if (v && pal[v]) {
+                        ctx.fillStyle = pal[v];
+                        ctx.fillRect(x * px, y * px, px, px);
+                    }
+                }
+            }
+
+            // Blush spots
+            ctx.fillStyle = 'rgba(255,107,129,0.3)';
+            ctx.fillRect(2 * px, 6 * px, px, px);
+            ctx.fillRect(10 * px, 6 * px, px, px);
+        })();
+
+        /* ====== Initialize decorations per slide ====== */
+        const pastelIndices = [0, 1, 3, 4, 5, 6, 7, 8, 9, 10];
+        pastelIndices.forEach(i => {
+            addHearts(slides[i], 5, false);
+            addSparkles(slides[i], 6);
+            addStars(slides[i], 4);
+        });
+        // Gothic slide gets red hearts only
+        addHearts(slides[2], 4, true);
+
+        /* ====== Mark gothic dot active on load (slide 0 is default) ====== */
+        // No need, slide 0 is active by default
+
+    })();
+    </script>
+</body>
+</html>
